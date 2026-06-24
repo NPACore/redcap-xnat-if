@@ -1,0 +1,7 @@
+PyCap
+python-dotenv
+flywheel-sdk
+pyxnat
+nibabel
+pydicom
+pandas
