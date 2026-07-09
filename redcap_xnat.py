@@ -28,9 +28,14 @@ for record in records:
     subject = record['subj_id']
     session = record['ses_id']
 
-    # skip records missing subject or session ID
-    if not subject or not session:
-        print(f"  Skipping record {record['record_id']} — missing subj_id or ses_id")
+    if not subject:
+        print(f"  Skipping record {record['record_id']} - missing subj_id")
+        continue
+
+    scan_date = record['scan_date']
+    
+    if not session and not scan_date:
+        print(f"  Skipping record {record['record_id']} - need either ses_id or scan_date")
         continue
 
     finding = record['finding']
@@ -43,11 +48,25 @@ for record in records:
     # get experiment ID from label
     experiments_url = f"{BASE_URL}/data/projects/{XNAT_PROJECT}/subjects/{subject}/experiments?format=json"
     r = xnat.get(experiments_url)
-    print(f"  Status: {r.status_code}")
-    print(f"  Response: {r.text}")
+    
+    if r.status_code != 200:
+        print(f"  Could not find subject {subject} in XNAT, skipping")
+        continue
+    
     results = r.json()['ResultSet']['Result']
 
-    experiment_id = next((e['ID'] for e in results if e['label'] == session), None)
+    # if only session ID, match by label
+    if session:
+        match = next((e for e in results if e['label'] == session), None)
+    # otherwise fall back to scan_date
+    else:
+        match = next((e for e in results if e.get('date') == scan_date), None)
+
+    if not match:
+        print(f"  WARNING: No matching session found for {subject} - bad session ID or not uploaded yet. Skipping.")
+        continue
+
+    experiment_id = match['ID']
 
     if not experiment_id:
         print(f"  Could not find experiment for session {session}, skipping")
