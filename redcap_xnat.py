@@ -5,6 +5,7 @@ import requests
 import os
 from dotenv import load_dotenv
 from urllib.parse import urlparse
+from datetime import date
 
 load_dotenv()
 
@@ -19,8 +20,11 @@ XNAT_PROJECT = os.getenv('XNAT_PROJECT')
 SESSION_FORM_UUID = os.getenv('XNAT_FORM_UUID')
 SUBJECT_FORM_UUID = os.getenv('XNAT_SUBJECT_FORM_UUID')
 
+def normalize_id(s):
+    return s.upper().replace('_', '').replace('-', '').replace(' ', '')
+
 # pull completed reveiw from REDcap
-records = project.export_records(filter_logic='[report_complete] = "2"')
+records = project.export_records(filter_logic='[report_complete] = "2" AND [xnat_sync_status] != "synced"')
 print(f"Found {len(records)} completed review")
 
 for record in records:
@@ -57,7 +61,7 @@ for record in records:
 
     # if only session ID, match by label
     if session:
-        match = next((e for e in results if e['label'] == session), None)
+        match = next((e for e in results if normalize_id(e['label']) == normalize_id(session)), None)
     # otherwise fall back to scan_date
     else:
         match = next((e for e in results if e.get('date') == scan_date), None)
@@ -96,5 +100,16 @@ for record in records:
     }
     r = xnat.put(subject_endpoint, json=subject_payload)
     print(f"  Subject flag: {r.status_code}")
+
+    # after both 200 responses
+    sync_record = [{
+        'record_id': record['record_id'],
+        'xnat_sync_status': 'synced',
+        'xnat_sync_date': date.today().strftime('%Y-%m-%d'),
+        'xnat_ses_id_cron': match['label'],
+        'xnat_url_cron': f"{BASE_URL}/data/projects/{XNAT_PROJECT}/subjects/{subject}/experiments/{experiment_id}"
+        }]
+    project.import_records(sync_record)
+    print(f"  REDCap sync status updated")
 
 print("Done.")
