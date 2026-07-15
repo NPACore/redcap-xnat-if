@@ -6,7 +6,7 @@ import json
 
 load_dotenv()
 
-URL = 'https://redcap-std.hs.pitt.edu/redcap/api/'
+URL = os.getenv('REDCAP_URL')
 TOKEN = os.getenv('REDCAP_TOKEN')
 
 project = redcap.Project(URL, TOKEN)
