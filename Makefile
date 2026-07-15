@@ -2,7 +2,7 @@
 test: .test.results
 
 .test.results: $(wildcard *.py) $(wildcard */*.py) | .venv
-	python3 -m pytest tests/ | tee $@
+	source .venv/bin/activate && python3 -m pytest tests/ | tee $@
 
 .venv:
 	uv venv .venv

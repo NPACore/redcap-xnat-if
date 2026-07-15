@@ -2,4 +2,5 @@
 .env
 test_dicoms
 test_dicoms/
+.test.results
 __pycache__
