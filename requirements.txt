@@ -5,3 +5,4 @@ pyxnat
 nibabel
 pydicom
 pandas
+pytest
