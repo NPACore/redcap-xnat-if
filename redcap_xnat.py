@@ -5,10 +5,10 @@ import requests
 import os
 from dotenv import load_dotenv
 from urllib.parse import urlparse
-from datetime import date
+from datetime import date, datetime
 
-# TODO: replace prints with logging.info logging.warn etc
-
+def log(msg):
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] {msg}")
 
 def normalize_id(s):
     """Ameliorate label inconsistencies.
@@ -78,14 +78,14 @@ def redcap_to_xnat(record, xnat) -> dict:
     XNAT_PROJECT = os.getenv("XNAT_PROJECT")
 
     if not subject:
-        print(f"  Skipping record {record['record_id']} - missing subj_id")
+        log(f"  Skipping record {record['record_id']} - missing subj_id")
         return error_dict(record, "no subj_id in REDCap")
 
     scan_date = record["scan_date"]
 
     # TODO: check xnat url can get session and date from that
     if not session and not scan_date:
-        print(
+        log(
             f"  Skipping record {record['record_id']} - need either ses_id or scan_date"
         )
         return error_dict(record, "no xnat info REDCap")
@@ -99,7 +99,7 @@ def redcap_to_xnat(record, xnat) -> dict:
     # TODO: if not provided xnat_url, try to find it
     session_url = xnat_url
 
-    print(f"Processing record {record['record_id']}:  sub {subject} ses {session}")
+    log(f"Processing record {record['record_id']}:  sub {subject} ses {session}")
 
     # TODO!!: find xnat project. maybe using session search, URL, or redcap project
     # use find_xnat(xnat, **record)
@@ -109,7 +109,7 @@ def redcap_to_xnat(record, xnat) -> dict:
     r = xnat.get(experiments_url)
 
     if r.status_code != 200:
-        print(
+        log(
             f"  Could not find subject {subject} {session} in XNAT (ret {r.status_code} on {experiments_url}), skipping"
         )
         return error_dict(record, f"xnat lookup {r.status_code}")
@@ -133,7 +133,7 @@ def redcap_to_xnat(record, xnat) -> dict:
     # TODO: additional 'if not match' to try using getting session from xnat url
 
     if not match:
-        print(
+        log(
             f"  WARNING: No matching session found for {subject} - bad session ID or not uploaded yet. Skipping."
         )
         return error_dict(record, "no xnat match")
@@ -141,10 +141,10 @@ def redcap_to_xnat(record, xnat) -> dict:
     experiment_id = match["ID"]
 
     if not experiment_id:
-        print(f"  Could not find experiment for session {session}, skipping")
+        log(f"  Could not find experiment for session {session}, skipping")
         return error_dict(record, f"no experiment for session {session}")
 
-    print(f"  Experiment ID: {experiment_id}")
+    log(f"  Experiment ID: {experiment_id}")
     SESSION_FORM_UUID = os.getenv("XNAT_FORM_UUID")
     SUBJECT_FORM_UUID = os.getenv("XNAT_SUBJECT_FORM_UUID")
 
@@ -165,12 +165,12 @@ def redcap_to_xnat(record, xnat) -> dict:
     }
 
     if os.getenv("DRYRUN"):
-        print(f"DRYRUN: would update xnat with {subject_payload} {session_payload}")
+        log(f"DRYRUN: would update xnat with {subject_payload} {session_payload}")
     else:
         r = xnat.put(session_endpoint, json=session_payload)
-        print(f"  Session form: {r.status_code}")
+        log(f"  Session form: {r.status_code}")
         r = xnat.put(subject_endpoint, json=subject_payload)
-        print(f"  Subject flag: {r.status_code}")
+        log(f"  Subject flag: {r.status_code}")
 
     # after both 200 responses
     return {
@@ -197,25 +197,25 @@ def main():
     xnat.auth = (os.getenv("XNAT_USER"), os.getenv("XNAT_PASS"))
 
     # pull completed reveiw from REDcap
-    print("Searching redcap ...")
+    log("Searching redcap ...")
     records = project.export_records(
         filter_logic='[report_complete] = "2" AND [xnat_sync_status] != "synced"'
     )
-    print(f"Found {len(records)} completed review")
+    log(f"Found {len(records)} completed review")
 
     for record in records:
         sync_record = redcap_to_xnat(record, xnat)
 
         if os.getenv("DRYRUN"):
-            print(sync_record)
+            log(sync_record)
         else:
             # TODO: sync all at onces. build array to submit instead of request per row?
             project.import_records([sync_record])
-        print(f"  REDCap sync status updated")
+        log(f"  REDCap sync status updated")
 
     # TODO: go through sync_records that failed for more than a 2 days(?)
     #       email RA and us. can be separate script using export_records independently
-    print("Done.")
+    log("Done.")
 
 
 if __name__ == "__main__":
