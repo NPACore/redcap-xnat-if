@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Search for recent sessions. POST to https://$xnat/data/search -->
+<!-- https://wiki.xnat.org/xnat-api/how-to-query-the-xnat-search-engine-with-rest-api -->
+<xdat:search ID="" allow-diff-columns="0" secure="false" brief-description="MR Sessions" xmlns:cnda="http://nrg.wustl.edu/cnda" xmlns:arc="http://nrg.wustl.edu/arc" xmlns:pipe="http://nrg.wustl.edu/pipe" xmlns:fs="http://nrg.wustl.edu/fs" xmlns:wrk="http://nrg.wustl.edu/workflow" xmlns:xdat="http://nrg.wustl.edu/security" xmlns:cat="http://nrg.wustl.edu/catalog" xmlns:prov="http://www.nbirn.net/prov" xmlns:xnat="http://nrg.wustl.edu/xnat" xmlns:xnat_a="http://nrg.wustl.edu/xnat_assessments" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" >
+	<xdat:root_element_name>xnat:mrSessionData</xdat:root_element_name>
+	<xdat:search_field>
+		<xdat:element_name>xnat:mrSessionData</xdat:element_name>
+		<xdat:field_ID>LABEL</xdat:field_ID>
+		<xdat:sequence>0</xdat:sequence>
+		<xdat:type>string</xdat:type>
+		<xdat:header>MR ID</xdat:header>
+	</xdat:search_field>
+	<xdat:search_field>
+		<xdat:element_name>xnat:subjectData</xdat:element_name>
+		<xdat:field_ID>LABEL</xdat:field_ID>
+		<xdat:sequence>2</xdat:sequence>
+		<xdat:type>string</xdat:type>
+		<xdat:header>Subject</xdat:header>
+	</xdat:search_field>
+	<xdat:search_field>
+		<xdat:element_name>xnat:mrSessionData</xdat:element_name>
+		<xdat:field_ID>AGE</xdat:field_ID>
+		<xdat:sequence>3</xdat:sequence>
+		<xdat:type>integer</xdat:type>
+		<xdat:header>Age</xdat:header>
+	</xdat:search_field>
+	<xdat:search_where method="AND">
+		<xdat:criteria override_value_formatting="0">
+			<xdat:schema_field>xnat:mrSessionData/GEN_AGE</xdat:schema_field>
+			<xdat:comparison_type>></xdat:comparison_type>
+			<xdat:value>90</xdat:value>
+		</xdat:criteria>
+		<xdat:criteria override_value_formatting="0">
+			<xdat:schema_field>xnat:mrSessionData/scans/scan/type</xdat:schema_field>
+			<xdat:comparison_type>=</xdat:comparison_type>
+			<xdat:value>MPRAGE</xdat:value>
+		</xdat:criteria>
+	</xdat:search_where>
+</xdat:search>
